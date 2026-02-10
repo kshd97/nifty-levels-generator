@@ -664,15 +664,24 @@ def process_excel_file(input_source):
                 
                 # Filter to First and Last if we have more than 1
                 if valid_ce_beps:
-                    beps_to_plot = [valid_ce_beps[0]] # First (Highest Strike)
-                    if len(valid_ce_beps) > 1:
-                        beps_to_plot.append(valid_ce_beps[-1]) # Last (Lowest Strike)
-                    # Use set to avoid duplicates if first == last (unlikely but possible)
-                    # Actually list is fine. distinct valid beps.
+                    beps_to_plot = []
+                    # First item from daily_max (Index 0) is Highest Strike -> R5
+                    # Last item (Index -1) is Lowest Strike -> R1
                     
-                    for bep in beps_to_plot:
-                        res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
-                        res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                    # Logic: Assuming valid_ce_beps preserves order (Highest Value to Lowest Value)
+                    if len(valid_ce_beps) > 0:
+                         # Highest Value -> R5
+                         beps_to_plot.append({'val': valid_ce_beps[0], 'label': 'R5'})
+                    
+                    if len(valid_ce_beps) > 1:
+                         # Lowest Value -> R1
+                         beps_to_plot.append({'val': valid_ce_beps[-1], 'label': 'R1'})
+                    
+                    for item in beps_to_plot:
+                        bep = item['val']
+                        lbl = item['label']
+                        res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=baby_pink, width=1, style=line.style_solid)')
+                        res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "{lbl}: {bep}", style=label.style_none, textcolor=baby_pink)')
 
                 # PE Levels (Only First and Last BEP)
                 sup_bep_lines = []
@@ -686,17 +695,30 @@ def process_excel_file(input_source):
                     except: pass
                     
                 if valid_pe_beps:
-                    beps_to_plot = [valid_pe_beps[0]] # First (Highest Strike)
+                    beps_to_plot = []
+                    # First item from daily_max (Index 0) is Highest Strike -> S1
+                    # Last item (Index -1) is Lowest Strike -> S5
+                    
+                    if len(valid_pe_beps) > 0:
+                         # Highest Value -> S1
+                         beps_to_plot.append({'val': valid_pe_beps[0], 'label': 'S1'})
+                    
                     if len(valid_pe_beps) > 1:
-                        beps_to_plot.append(valid_pe_beps[-1]) # Last (Lowest Strike)
+                        # Lowest Value -> S5
+                         beps_to_plot.append({'val': valid_pe_beps[-1], 'label': 'S5'})
                         
-                    for bep in beps_to_plot:
-                        sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
-                        sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "SUP BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                    for item in beps_to_plot:
+                        bep = item['val']
+                        lbl = item['label']
+                        sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=baby_pink, width=1, style=line.style_solid)')
+                        sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "{lbl}: {bep}", style=label.style_none, textcolor=baby_pink)')
                 
                 pine_script = f"""// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 //@version=5
 indicator("Nifty Levels - {last_day.upper()}", overlay=true)
+
+// Color Definition
+baby_pink = color.rgb(255, 182, 193)
 
 if barstate.islast
     // Resistance BEP (Pink)
