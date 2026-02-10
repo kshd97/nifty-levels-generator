@@ -650,34 +650,49 @@ def process_excel_file(input_source):
                 # Columns: CE Strike, Money, AVWAP, CE BEP, PE Strike, Money, AVWAP, PE BEP...
                 
                 # We need numeric data
-                # CE Levels (Only BEP as per user request)
-                res_lines = [] # Unused now
+                # CE Levels (Only First and Last BEP)
                 res_bep_lines = [] 
                 
-                # It has 5 rows + Total row. We only want top 5.
+                # Collect valid BEPs first
+                valid_ce_beps = []
                 for i in range(5):
                     try:
-                        # Res BEP
                         bep = daily_max.iloc[i]['CE BEP']
                         if pd.notna(bep) and bep > 0:
-                            bep = round(bep, 2)
-                            res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
-                            res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                            valid_ce_beps.append(round(bep, 2))
                     except: pass
+                
+                # Filter to First and Last if we have more than 1
+                if valid_ce_beps:
+                    beps_to_plot = [valid_ce_beps[0]] # First (Highest Strike)
+                    if len(valid_ce_beps) > 1:
+                        beps_to_plot.append(valid_ce_beps[-1]) # Last (Lowest Strike)
+                    # Use set to avoid duplicates if first == last (unlikely but possible)
+                    # Actually list is fine. distinct valid beps.
                     
-                # PE Levels (Only BEP as per user request)
-                sup_lines = [] # Unused now
+                    for bep in beps_to_plot:
+                        res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
+                        res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+
+                # PE Levels (Only First and Last BEP)
                 sup_bep_lines = []
                 
+                valid_pe_beps = []
                 for i in range(5):
                     try:
-                        # Sup BEP
                         bep = daily_max.iloc[i]['PE BEP']
                         if pd.notna(bep) and bep > 0:
-                            bep = round(bep, 2)
-                            sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
-                            sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "SUP BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                            valid_pe_beps.append(round(bep, 2))
                     except: pass
+                    
+                if valid_pe_beps:
+                    beps_to_plot = [valid_pe_beps[0]] # First (Highest Strike)
+                    if len(valid_pe_beps) > 1:
+                        beps_to_plot.append(valid_pe_beps[-1]) # Last (Lowest Strike)
+                        
+                    for bep in beps_to_plot:
+                        sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
+                        sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "SUP BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                 
                 pine_script = f"""// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 //@version=5
