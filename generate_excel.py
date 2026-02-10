@@ -61,6 +61,8 @@ def process_sheet_data(xl, sheet_name):
             df['Put_LTP'] = pd.to_numeric(df['LTP (Chg %).1'], errors='coerce')
             
         df = df.dropna(subset=['Strike'])
+        # Ensure unique strikes to prevent reindexing errors
+        df = df.drop_duplicates(subset=['Strike'])
         cols_to_fill = ['Call_Chg_OI_Val', 'Put_Chg_OI_Val', 'Call_VWAP', 'Put_VWAP', 'Call_LTP', 'Put_LTP']
         for c in cols_to_fill:
             if c in df.columns:
