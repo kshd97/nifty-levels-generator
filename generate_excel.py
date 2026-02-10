@@ -504,20 +504,13 @@ def process_excel_file(input_source):
                 # Columns: CE Strike, Money, AVWAP, CE BEP, PE Strike, Money, AVWAP, PE BEP...
                 
                 # We need numeric data
-                # CE Levels (Resistance + BEP)
-                res_lines = []
-                res_bep_lines = [] # New list for BEP
+                # CE Levels (Only BEP as per user request)
+                res_lines = [] # Unused now
+                res_bep_lines = [] 
                 
                 # It has 5 rows + Total row. We only want top 5.
                 for i in range(5):
                     try:
-                        # Resistance (Strike)
-                        strike = daily_max.iloc[i]['CE Strike']
-                        if pd.notna(strike) and strike > 0:
-                            strike = int(strike)
-                            res_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.red, width=2)')
-                            res_lines.append(f'label.new(bar_index + 5, {strike}, "RES: {strike}", style=label.style_none, textcolor=color.red)')
-                            
                         # Res BEP
                         bep = daily_max.iloc[i]['CE BEP']
                         if pd.notna(bep) and bep > 0:
@@ -526,19 +519,12 @@ def process_excel_file(input_source):
                             res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                     
-                # PE Levels (Support + BEP)
-                sup_lines = []
+                # PE Levels (Only BEP as per user request)
+                sup_lines = [] # Unused now
                 sup_bep_lines = []
                 
                 for i in range(5):
                     try:
-                        # Support (Strike)
-                        strike = daily_max.iloc[i]['PE Strike']
-                        if pd.notna(strike) and strike > 0:
-                            strike = int(strike)
-                            sup_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.green, width=2)')
-                            sup_lines.append(f'label.new(bar_index + 5, {strike}, "SUP: {strike}", style=label.style_none, textcolor=color.green)')
-                            
                         # Sup BEP
                         bep = daily_max.iloc[i]['PE BEP']
                         if pd.notna(bep) and bep > 0:
@@ -552,14 +538,8 @@ def process_excel_file(input_source):
 indicator("Nifty Levels - {last_day.upper()}", overlay=true)
 
 if barstate.islast
-    // Resistance (Red)
-    {"\n    ".join(res_lines)}
-    
     // Resistance BEP (Pink)
     {"\n    ".join(res_bep_lines)}
-    
-    // Support (Green)
-    {"\n    ".join(sup_lines)}
     
     // Support BEP (Pink)
     {"\n    ".join(sup_bep_lines)}
