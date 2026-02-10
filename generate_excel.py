@@ -386,8 +386,8 @@ def process_excel_file(input_source):
         
         subset = pd.DataFrame(index=base_df.index)
         subset['CE BEP'] = ce_bep
-        subset['CE Money'] = cum_ce_money
-        subset['PE Money'] = cum_pe_money
+        subset['CE Money'] = round(cum_ce_money / 10000000, 2)
+        subset['PE Money'] = round(cum_pe_money / 10000000, 2)
         subset['PE BEP'] = pe_bep
         
         # Store for Max Sheet usage
@@ -465,19 +465,19 @@ def process_excel_file(input_source):
         # Unless user explicitly asks to revert to Rank order. 
         # The image 2 might just be an example of structure.
         
-        # Calculate Sums (in Crores / 10^7)
-        ce_money_sum = round(top_calls[ce_metric].sum() / 10000000, 2)
-        pe_money_sum = round(top_puts[pe_metric].sum() / 10000000, 2)
+        # Calculate Sums (Data is ALREADY scaled to Crores in subset)
+        ce_money_sum = top_calls[ce_metric].sum()
+        pe_money_sum = top_puts[pe_metric].sum()
         
         res_data = []
         for strike in top_calls.index:
-            val = round(top_calls.loc[strike, ce_metric] / 10000000, 2)
+            val = top_calls.loc[strike, ce_metric]
             ref = round(top_calls.loc[strike, 'Avg CE Ref'], 2)
             res_data.append([strike, val, ref, strike+ref])
             
         sup_data = []
         for strike in top_puts.index:
-            val = round(top_puts.loc[strike, pe_metric] / 10000000, 2)
+            val = top_puts.loc[strike, pe_metric]
             ref = round(top_puts.loc[strike, 'Avg PE Ref'], 2)
             sup_data.append([strike, val, ref, strike-ref])
             
@@ -661,7 +661,7 @@ def process_excel_file(input_source):
                         bep = daily_max.iloc[i]['CE BEP']
                         if pd.notna(bep) and bep > 0:
                             bep = round(bep, 2)
-                            res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
+                            res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
                             res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                     
@@ -675,7 +675,7 @@ def process_excel_file(input_source):
                         bep = daily_max.iloc[i]['PE BEP']
                         if pd.notna(bep) and bep > 0:
                             bep = round(bep, 2)
-                            sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
+                            sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_solid)')
                             sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "SUP BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                 
