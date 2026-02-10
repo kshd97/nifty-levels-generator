@@ -157,31 +157,27 @@ def process_excel_file(input_source):
                 # 1. PUT SIDE INSERTION
                 if put_oi_idx != -1 and put_chg_idx != -1:
                     # Insert after 'Chg in OI'. 
-                    # If Chg is at col X, we insert at X+1.
                     insert_col = put_chg_idx + 1
                     ws.insert_cols(insert_col)
+                    
+                    # Update indices if they were shifted
+                    current_put_oi_idx = put_oi_idx
+                    if put_oi_idx >= insert_col:
+                        current_put_oi_idx += 1
+                        
+                    current_put_chg_idx = put_chg_idx
+                    # If chg was somehow >= insert_col (impossible as insert is chg+1), but good practice
+                    if put_chg_idx >= insert_col:
+                        current_put_chg_idx += 1
                     
                     # Set Header
                     ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
                     
                     # Compute Values
                     for r in range(header_row_idx + 1, ws.max_row + 1):
-                        # Read OI and Chg
-                        # Note: indices shifted? No, we inserted at X+1. Chg is at X. OI is at Y.
-                        # Wait, if OI was > Chg, OI index shifted?
-                        # Usually Layout: OI, Chg in OI... Strike ... 
-                        # Or ... Chg in OI, OI?
-                        # Pandas output showed: 'Chg in OI Value', 'OI', 'Chg in OI'.
-                        # So Chg in OI is AFTER OI usually?
-                        # Let's verify pandas output:
-                        # 6: OI, 7: Chg in OI.
-                        # So Chg > OI.
-                        
-                        # So if we insert after Chg, OI is unaffected.
-                        
                         try:
-                            oi_val = ws.cell(row=r, column=put_oi_idx).value
-                            chg_val = ws.cell(row=r, column=put_chg_idx).value
+                            oi_val = ws.cell(row=r, column=current_put_oi_idx).value
+                            chg_val = ws.cell(row=r, column=current_put_chg_idx).value
                             
                             # Handle string inputs or None
                             if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
@@ -198,14 +194,23 @@ def process_excel_file(input_source):
                     insert_col = call_chg_idx + 1
                     ws.insert_cols(insert_col)
                     
+                    # Update indices if they were shifted
+                    current_call_oi_idx = call_oi_idx
+                    if call_oi_idx >= insert_col:
+                        current_call_oi_idx += 1
+                        
+                    current_call_chg_idx = call_chg_idx
+                    if call_chg_idx >= insert_col:
+                        current_call_chg_idx += 1
+                    
                     # Set Header
                     ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
                     
                     # Compute Values
                     for r in range(header_row_idx + 1, ws.max_row + 1):
                         try:
-                            oi_val = ws.cell(row=r, column=call_oi_idx).value
-                            chg_val = ws.cell(row=r, column=call_chg_idx).value
+                            oi_val = ws.cell(row=r, column=current_call_oi_idx).value
+                            chg_val = ws.cell(row=r, column=current_call_chg_idx).value
                             
                             if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
                                 if oi_val != 0:
