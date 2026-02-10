@@ -535,10 +535,10 @@ indicator("Nifty Levels - {last_day.upper()}", overlay=true)
 
 if barstate.islast
     // Resistance (Red)
-    {"\\n    ".join(res_lines)}
+    {"\n    ".join(res_lines)}
     
     // Support (Green)
-    {"\\n    ".join(sup_lines)}
+    {"\n    ".join(sup_lines)}
 """
         except Exception as e:
             print(f"Error generating Pine Script: {e}")
