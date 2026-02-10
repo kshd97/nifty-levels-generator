@@ -523,7 +523,7 @@ def process_excel_file(input_source):
                         if pd.notna(bep) and bep > 0:
                             bep = round(bep, 2)
                             res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
-                            res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                            res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "RES BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                     
                 # PE Levels (Support + BEP)
@@ -544,7 +544,7 @@ def process_excel_file(input_source):
                         if pd.notna(bep) and bep > 0:
                             bep = round(bep, 2)
                             sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
-                            sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
+                            sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "SUP BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                 
                 pine_script = f"""// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
