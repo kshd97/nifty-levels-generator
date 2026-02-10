@@ -24,8 +24,8 @@ if uploaded_file:
                 # Read bytes from uploaded file
                 input_bytes = uploaded_file.read()
                 
-                # Get processed output bytes
-                output_bytes = process_excel_file(input_bytes)
+                # Get processed output bytes and pine script
+                output_bytes, pine_script = process_excel_file(input_bytes)
                 
                 if output_bytes:
                     st.success("Processing Complete!")
@@ -42,6 +42,12 @@ if uploaded_file:
                         file_name=output_filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+                    
+                    if pine_script:
+                        st.markdown("### 🌲 TradingView Pine Script")
+                        st.info("Copy the code below and paste it into the **Pine Editor** tab on TradingView to see your levels.")
+                        st.code(pine_script, language='pinescript')
+                        
                 else:
                     st.error("Processing failed. Please check if the uploaded file has valid data.")
                     

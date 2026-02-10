@@ -491,16 +491,71 @@ def process_excel_file(input_source):
                 adjusted_width = (max_length + 2)
                 ws.column_dimensions[column_letter].width = adjusted_width
 
-    # Return the modified bytes
-    return buffer.getvalue()
+    # 7. Generate Pine Script for the LAST day
+    pine_script = ""
+    if day_sheets:
+        last_day = day_sheets[-1]
+        try:
+            # Check if last_day exists in final_max_df
+            # final_max_df has MultiIndex: (Day, Col)
+            # We can cross-section or just try to access
+            if last_day in final_max_df.columns.get_level_values(0):
+                daily_max = final_max_df[last_day]
+                # Columns: CE Strike, Money, AVWAP, CE BEP, PE Strike, Money, AVWAP, PE BEP...
+                
+                # We need numeric data
+                # CE Levels
+                res_lines = []
+                # It has 5 rows + Total row. We only want top 5.
+                # The dataframe might have NaNs or Total row.
+                # Iterate rows 0 to 4
+                for i in range(5):
+                    try:
+                        strike = daily_max.iloc[i]['CE Strike']
+                        if pd.notna(strike) and strike > 0:
+                            strike = int(strike)
+                            res_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.red, width=2)')
+                            res_lines.append(f'label.new(bar_index + 5, {strike}, "RES: {strike}", style=label.style_none, textcolor=color.red)')
+                    except: pass
+                    
+                # PE Levels
+                sup_lines = []
+                for i in range(5):
+                    try:
+                        strike = daily_max.iloc[i]['PE Strike']
+                        if pd.notna(strike) and strike > 0:
+                            strike = int(strike)
+                            sup_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.green, width=2)')
+                            sup_lines.append(f'label.new(bar_index + 5, {strike}, "SUP: {strike}", style=label.style_none, textcolor=color.green)')
+                    except: pass
+                
+                pine_script = f"""// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+//@version=5
+indicator("Nifty Levels - {last_day.upper()}", overlay=true)
+
+if barstate.islast
+    // Resistance (Red)
+    {"\\n    ".join(res_lines)}
+    
+    // Support (Green)
+    {"\\n    ".join(sup_lines)}
+"""
+        except Exception as e:
+            print(f"Error generating Pine Script: {e}")
+
+    # Return the modified bytes AND the pine script
+    return buffer.getvalue(), pine_script
 
 if __name__ == "__main__":
     file_path = 'Nifty 10th Feb expiry - 1.xlsx'
     if os.path.exists(file_path):
-        new_bytes = process_excel_file(file_path)
+        new_bytes, pine_code = process_excel_file(file_path)
         if new_bytes:
             with open(file_path, 'wb') as f:
                 f.write(new_bytes)
             print(f"Successfully processed {file_path}")
+            if pine_code:
+                print("\n--- Generated Pine Script ---")
+                print(pine_code)
     else:
         print(f"File not found: {file_path}")

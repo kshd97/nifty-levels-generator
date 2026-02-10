@@ -1,0 +1,42 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © NiftyLevelsGenerator
+
+//@version=5
+indicator("Nifty Support & Resistance (Sample)", overlay=true)
+
+// --- Resistance Levels (Red) ---
+// Example Levels: 24500, 24600
+r1 = line.new(bar_index, 24500, bar_index + 1, 24500, extend = extend.both, color = color.red, width = 2)
+label.new(bar_index + 10, 24500, "Res: 24500", style = label.style_none, textcolor = color.red)
+
+r2 = line.new(bar_index, 24600, bar_index + 1, 24600, extend = extend.both, color = color.red, width = 2)
+label.new(bar_index + 10, 24600, "Res: 24600", style = label.style_none, textcolor = color.red)
+
+
+// --- Support Levels (Green) ---
+// Example Levels: 24300, 24200
+s1 = line.new(bar_index, 24300, bar_index + 1, 24300, extend = extend.both, color = color.green, width = 2)
+label.new(bar_index + 10, 24300, "Sup: 24300", style = label.style_none, textcolor = color.green)
+
+s2 = line.new(bar_index, 24200, bar_index + 1, 24200, extend = extend.both, color = color.green, width = 2)
+label.new(bar_index + 10, 24200, "Sup: 24200", style = label.style_none, textcolor = color.green)
+
+// Delete old lines to prevent clutter (since script creates new lines on every bar update if not handled, 
+// strictly speaking line.new on every bar without deletion is bad, 
+// BUT for simple "overlay" scripts that run once on historical bars, we usually use `var` or `line.delete`)
+
+// Better approach for static levels:
+var line l_r1 = line.new(bar_index, 24500, bar_index + 1, 24500, extend = extend.both, color = color.red, width = 2)
+var line l_s1 = line.new(bar_index, 24300, bar_index + 1, 24300, extend = extend.both, color = color.green, width = 2)
+
+// Actually, `line.new` in global scope without `var` will draw on every bar.
+// To draw just ONCE (static levels for the whole day), we should use `if barstate.islast`.
+
+if barstate.islast
+    // Resistance
+    line.new(bar_index - 100, 24550, bar_index + 10, 24550, extend=extend.both, color=color.red, width=2)
+    label.new(bar_index + 5, 24550, "RES: 24550", style=label.style_none, textcolor=color.red)
+    
+    // Support
+    line.new(bar_index - 100, 24350, bar_index + 10, 24350, extend=extend.both, color=color.green, width=2)
+    label.new(bar_index + 5, 24350, "SUP: 24350", style=label.style_none, textcolor=color.green)
