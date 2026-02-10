@@ -465,20 +465,20 @@ def process_excel_file(input_source):
         # Unless user explicitly asks to revert to Rank order. 
         # The image 2 might just be an example of structure.
         
-        # Calculate Sums
-        ce_money_sum = top_calls[ce_metric].sum()
-        pe_money_sum = top_puts[pe_metric].sum()
+        # Calculate Sums (in Crores / 10^7)
+        ce_money_sum = round(top_calls[ce_metric].sum() / 10000000, 2)
+        pe_money_sum = round(top_puts[pe_metric].sum() / 10000000, 2)
         
         res_data = []
         for strike in top_calls.index:
-            val = top_calls.loc[strike, ce_metric]
-            ref = top_calls.loc[strike, 'Avg CE Ref'] 
+            val = round(top_calls.loc[strike, ce_metric] / 10000000, 2)
+            ref = round(top_calls.loc[strike, 'Avg CE Ref'], 2)
             res_data.append([strike, val, ref, strike+ref])
             
         sup_data = []
         for strike in top_puts.index:
-            val = top_puts.loc[strike, pe_metric]
-            ref = top_puts.loc[strike, 'Avg PE Ref']
+            val = round(top_puts.loc[strike, pe_metric] / 10000000, 2)
+            ref = round(top_puts.loc[strike, 'Avg PE Ref'], 2)
             sup_data.append([strike, val, ref, strike-ref])
             
         # Ensure 5 rows
