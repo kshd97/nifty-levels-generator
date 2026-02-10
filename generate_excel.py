@@ -95,9 +95,137 @@ def process_excel_file(input_source):
              
     # Create ExcelFile object for reading
     try:
+        # Step 0: Pre-process to add "Change in OI%" columns to Day Sheets
+        # We use openpyxl to modify the buffer in-place (or create new buffer)
+        import openpyxl
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.load_workbook(buffer)
+        
+        # Regex for day sheets again (need to reuse logic or just regex here)
+        sheet_names = wb.sheetnames
+        day_pattern = re.compile(r'^(tue|wed|thu|fri|mon|sun|sat)', re.IGNORECASE)
+        day_sheets_wb = [s for s in sheet_names if day_pattern.match(s) and s.lower() not in ['total', 'max']]
+        
+        for sheet_name in day_sheets_wb:
+            ws = wb[sheet_name]
+            
+            # Find Header Row
+            header_row_idx = -1
+            strike_col_idx = -1
+            
+            # Scan first 20 rows
+            for r in range(1, 21):
+                row_values = [cell.value for cell in ws[r]]
+                # check for 'Strike'
+                row_str = [str(v).strip() for v in row_values if v is not None]
+                if 'Strike' in row_str:
+                    header_row_idx = r
+                    # Find Strike Column Index (1-based)
+                    for c_idx, val in enumerate(row_values, 1):
+                        if str(val).strip() == 'Strike':
+                            strike_col_idx = c_idx
+                            break
+                    break
+            
+            if header_row_idx != -1 and strike_col_idx != -1:
+                # Identify Columns relative to Strike
+                # We need 'OI' and 'Chg in OI' on LEFT (Call) and RIGHT (Put)
+                
+                # Helper to find col index given name and range (left/right of strike)
+                def find_col(name, start_col, end_col):
+                    for c in range(start_col, end_col):
+                        val = ws.cell(row=header_row_idx, column=c).value
+                        if val and str(val).strip() == name:
+                            return c
+                    return -1
+
+                # CALL SIDE (Left of Strike)
+                call_oi_idx = find_col('OI', 1, strike_col_idx)
+                call_chg_idx = find_col('Chg in OI', 1, strike_col_idx) # Looking for 'Chg in OI'
+                
+                # PUT SIDE (Right of Strike)
+                # Note: ws.max_column might be large, limit search?
+                put_oi_idx = find_col('OI', strike_col_idx + 1, ws.max_column + 1)
+                put_chg_idx = find_col('Chg in OI', strike_col_idx + 1, ws.max_column + 1)
+                
+                # Insertion Logic
+                # Insert Right-to-Left to avoid shifting impacts on yet-to-process indices?
+                # Actually, Insert Put side first (Right), then Call side (Left).
+                # Inserting at Put side shifts nothing to the left of it (so Call indices stay valid).
+                
+                # 1. PUT SIDE INSERTION
+                if put_oi_idx != -1 and put_chg_idx != -1:
+                    # Insert after 'Chg in OI'. 
+                    # If Chg is at col X, we insert at X+1.
+                    insert_col = put_chg_idx + 1
+                    ws.insert_cols(insert_col)
+                    
+                    # Set Header
+                    ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
+                    
+                    # Compute Values
+                    for r in range(header_row_idx + 1, ws.max_row + 1):
+                        # Read OI and Chg
+                        # Note: indices shifted? No, we inserted at X+1. Chg is at X. OI is at Y.
+                        # Wait, if OI was > Chg, OI index shifted?
+                        # Usually Layout: OI, Chg in OI... Strike ... 
+                        # Or ... Chg in OI, OI?
+                        # Pandas output showed: 'Chg in OI Value', 'OI', 'Chg in OI'.
+                        # So Chg in OI is AFTER OI usually?
+                        # Let's verify pandas output:
+                        # 6: OI, 7: Chg in OI.
+                        # So Chg > OI.
+                        
+                        # So if we insert after Chg, OI is unaffected.
+                        
+                        try:
+                            oi_val = ws.cell(row=r, column=put_oi_idx).value
+                            chg_val = ws.cell(row=r, column=put_chg_idx).value
+                            
+                            # Handle string inputs or None
+                            if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
+                                if oi_val != 0:
+                                    pct = (chg_val / oi_val) * 100
+                                    ws.cell(row=r, column=insert_col).value = round(pct, 2)
+                                else:
+                                    ws.cell(row=r, column=insert_col).value = 0
+                        except: pass
+
+                # 2. CALL SIDE INSERTION
+                if call_oi_idx != -1 and call_chg_idx != -1:
+                    # Insert after 'Chg in OI'
+                    insert_col = call_chg_idx + 1
+                    ws.insert_cols(insert_col)
+                    
+                    # Set Header
+                    ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
+                    
+                    # Compute Values
+                    for r in range(header_row_idx + 1, ws.max_row + 1):
+                        try:
+                            oi_val = ws.cell(row=r, column=call_oi_idx).value
+                            chg_val = ws.cell(row=r, column=call_chg_idx).value
+                            
+                            if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
+                                if oi_val != 0:
+                                    pct = (chg_val / oi_val) * 100
+                                    ws.cell(row=r, column=insert_col).value = round(pct, 2)
+                                else:
+                                    ws.cell(row=r, column=insert_col).value = 0
+                        except: pass
+                        
+        # Save modified workbook to a new buffer
+        new_buffer = io.BytesIO()
+        wb.save(new_buffer)
+        new_buffer.seek(0)
+        
+        # Use THIS buffer for the rest of the processing
+        buffer = new_buffer
+        
         xl = pd.ExcelFile(buffer)
     except Exception as e:
-        print(f"Error opening Excel file: {e}")
+        print(f"Error opening or preprocessing Excel file: {e}")
         return None
         
     day_sheets = get_day_sheets(xl)
