@@ -158,67 +158,80 @@ def process_excel_file(input_source):
                 if put_oi_idx != -1 and put_chg_idx != -1:
                     # Insert after 'Chg in OI'. 
                     insert_col = put_chg_idx + 1
-                    ws.insert_cols(insert_col)
                     
-                    # Update indices if they were shifted
-                    current_put_oi_idx = put_oi_idx
-                    if put_oi_idx >= insert_col:
-                        current_put_oi_idx += 1
+                    # Idempotency Check: Check if column already exists
+                    current_header = ws.cell(row=header_row_idx, column=insert_col).value
+                    if str(current_header).strip() == "Change in OI%":
+                        # Already exists, skip insertion
+                        pass
+                    else:
+                        ws.insert_cols(insert_col)
                         
-                    current_put_chg_idx = put_chg_idx
-                    # If chg was somehow >= insert_col (impossible as insert is chg+1), but good practice
-                    if put_chg_idx >= insert_col:
-                        current_put_chg_idx += 1
-                    
-                    # Set Header
-                    ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
-                    
-                    # Compute Values
-                    for r in range(header_row_idx + 1, ws.max_row + 1):
-                        try:
-                            oi_val = ws.cell(row=r, column=current_put_oi_idx).value
-                            chg_val = ws.cell(row=r, column=current_put_chg_idx).value
+                        # Update indices if they were shifted
+                        current_put_oi_idx = put_oi_idx
+                        if put_oi_idx >= insert_col:
+                            current_put_oi_idx += 1
                             
-                            # Handle string inputs or None
-                            if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
-                                if oi_val != 0:
-                                    pct = (chg_val / oi_val) * 100
-                                    ws.cell(row=r, column=insert_col).value = round(pct, 2)
-                                else:
-                                    ws.cell(row=r, column=insert_col).value = 0
-                        except: pass
+                        current_put_chg_idx = put_chg_idx
+                        # If chg was somehow >= insert_col (impossible as insert is chg+1), but good practice
+                        if put_chg_idx >= insert_col:
+                            current_put_chg_idx += 1
+                        
+                        # Set Header
+                        ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
+                        
+                        # Compute Values
+                        for r in range(header_row_idx + 1, ws.max_row + 1):
+                            try:
+                                oi_val = ws.cell(row=r, column=current_put_oi_idx).value
+                                chg_val = ws.cell(row=r, column=current_put_chg_idx).value
+                                
+                                # Handle string inputs or None
+                                if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
+                                    if oi_val != 0:
+                                        pct = (chg_val / oi_val) * 100
+                                        ws.cell(row=r, column=insert_col).value = round(pct, 2)
+                                    else:
+                                        ws.cell(row=r, column=insert_col).value = 0
+                            except: pass
 
                 # 2. CALL SIDE INSERTION
                 if call_oi_idx != -1 and call_chg_idx != -1:
                     # Insert after 'Chg in OI'
                     insert_col = call_chg_idx + 1
-                    ws.insert_cols(insert_col)
                     
-                    # Update indices if they were shifted
-                    current_call_oi_idx = call_oi_idx
-                    if call_oi_idx >= insert_col:
-                        current_call_oi_idx += 1
+                    # Idempotency Check
+                    current_header = ws.cell(row=header_row_idx, column=insert_col).value
+                    if str(current_header).strip() == "Change in OI%":
+                        pass
+                    else:
+                        ws.insert_cols(insert_col)
                         
-                    current_call_chg_idx = call_chg_idx
-                    if call_chg_idx >= insert_col:
-                        current_call_chg_idx += 1
-                    
-                    # Set Header
-                    ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
-                    
-                    # Compute Values
-                    for r in range(header_row_idx + 1, ws.max_row + 1):
-                        try:
-                            oi_val = ws.cell(row=r, column=current_call_oi_idx).value
-                            chg_val = ws.cell(row=r, column=current_call_chg_idx).value
+                        # Update indices if they were shifted
+                        current_call_oi_idx = call_oi_idx
+                        if call_oi_idx >= insert_col:
+                            current_call_oi_idx += 1
                             
-                            if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
-                                if oi_val != 0:
-                                    pct = (chg_val / oi_val) * 100
-                                    ws.cell(row=r, column=insert_col).value = round(pct, 2)
-                                else:
-                                    ws.cell(row=r, column=insert_col).value = 0
-                        except: pass
+                        current_call_chg_idx = call_chg_idx
+                        if call_chg_idx >= insert_col:
+                            current_call_chg_idx += 1
+                        
+                        # Set Header
+                        ws.cell(row=header_row_idx, column=insert_col).value = "Change in OI%"
+                        
+                        # Compute Values
+                        for r in range(header_row_idx + 1, ws.max_row + 1):
+                            try:
+                                oi_val = ws.cell(row=r, column=current_call_oi_idx).value
+                                chg_val = ws.cell(row=r, column=current_call_chg_idx).value
+                                
+                                if isinstance(oi_val, (int, float)) and isinstance(chg_val, (int, float)):
+                                    if oi_val != 0:
+                                        pct = (chg_val / oi_val) * 100
+                                        ws.cell(row=r, column=insert_col).value = round(pct, 2)
+                                    else:
+                                        ws.cell(row=r, column=insert_col).value = 0
+                            except: pass
                         
         # Save modified workbook to a new buffer
         new_buffer = io.BytesIO()
