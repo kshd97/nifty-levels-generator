@@ -504,29 +504,47 @@ def process_excel_file(input_source):
                 # Columns: CE Strike, Money, AVWAP, CE BEP, PE Strike, Money, AVWAP, PE BEP...
                 
                 # We need numeric data
-                # CE Levels
+                # CE Levels (Resistance + BEP)
                 res_lines = []
+                res_bep_lines = [] # New list for BEP
+                
                 # It has 5 rows + Total row. We only want top 5.
-                # The dataframe might have NaNs or Total row.
-                # Iterate rows 0 to 4
                 for i in range(5):
                     try:
+                        # Resistance (Strike)
                         strike = daily_max.iloc[i]['CE Strike']
                         if pd.notna(strike) and strike > 0:
                             strike = int(strike)
                             res_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.red, width=2)')
                             res_lines.append(f'label.new(bar_index + 5, {strike}, "RES: {strike}", style=label.style_none, textcolor=color.red)')
+                            
+                        # Res BEP
+                        bep = daily_max.iloc[i]['CE BEP']
+                        if pd.notna(bep) and bep > 0:
+                            bep = round(bep, 2)
+                            res_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
+                            res_bep_lines.append(f'label.new(bar_index + 5, {bep}, "BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                     
-                # PE Levels
+                # PE Levels (Support + BEP)
                 sup_lines = []
+                sup_bep_lines = []
+                
                 for i in range(5):
                     try:
+                        # Support (Strike)
                         strike = daily_max.iloc[i]['PE Strike']
                         if pd.notna(strike) and strike > 0:
                             strike = int(strike)
                             sup_lines.append(f'line.new(bar_index, {strike}, bar_index + 1, {strike}, extend=extend.both, color=color.green, width=2)')
                             sup_lines.append(f'label.new(bar_index + 5, {strike}, "SUP: {strike}", style=label.style_none, textcolor=color.green)')
+                            
+                        # Sup BEP
+                        bep = daily_max.iloc[i]['PE BEP']
+                        if pd.notna(bep) and bep > 0:
+                            bep = round(bep, 2)
+                            sup_bep_lines.append(f'line.new(bar_index, {bep}, bar_index + 1, {bep}, extend=extend.both, color=color.fuchsia, width=1, style=line.style_dashed)')
+                            sup_bep_lines.append(f'label.new(bar_index + 5, {bep}, "BEP: {bep}", style=label.style_none, textcolor=color.fuchsia)')
                     except: pass
                 
                 pine_script = f"""// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
@@ -537,8 +555,14 @@ if barstate.islast
     // Resistance (Red)
     {"\n    ".join(res_lines)}
     
+    // Resistance BEP (Pink)
+    {"\n    ".join(res_bep_lines)}
+    
     // Support (Green)
     {"\n    ".join(sup_lines)}
+    
+    // Support BEP (Pink)
+    {"\n    ".join(sup_bep_lines)}
 """
         except Exception as e:
             print(f"Error generating Pine Script: {e}")
