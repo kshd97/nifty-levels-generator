@@ -1,4 +1,6 @@
 pandas
 openpyxl
-streamlit
+streamlit>=1.40.0
 numpy
+altair<6
+
